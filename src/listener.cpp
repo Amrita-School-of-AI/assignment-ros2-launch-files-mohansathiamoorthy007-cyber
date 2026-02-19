@@ -1,4 +1,5 @@
 #include <memory>
+#include <string>
 
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
@@ -9,10 +10,13 @@ class MinimalSubscriber : public rclcpp::Node
 {
 public:
   MinimalSubscriber()
-  : Node("listener")
+  : Node("listener") 
   {
     subscription_ = this->create_subscription<std_msgs::msg::String>(
-      "chatter", 10, std::bind(&MinimalSubscriber::topic_callback, this, _1));
+      "chatter", 
+      10, 
+      std::bind(&MinimalSubscriber::topic_callback, this, _1)
+    );
   }
 
 private:
@@ -27,7 +31,9 @@ private:
 int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
+  
   rclcpp::spin(std::make_shared<MinimalSubscriber>());
+  
   rclcpp::shutdown();
   return 0;
 }
