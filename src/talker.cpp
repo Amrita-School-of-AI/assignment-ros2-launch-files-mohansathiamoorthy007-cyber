@@ -1,24 +1,48 @@
-from launch import LaunchDescription
-from launch_ros.actions import Node
+#include <chrono>
+#include <functional>
+#include <memory>
+#include <string>
 
-def generate_launch_description():
+#include "rclcpp/rclcpp.hpp"
+#include "std_msgs/msg/string.hpp"
 
-    talker_node = Node(
-        package="ros2_launch_demo",
-        executable="talker",
-        name="talker",
-        output="screen",
-        parameters=[{"message_prefix": "ROS2"}],  # overrides default "Hello"
-    )
+using namespace std::chrono_literals;
 
-    listener_node = Node(
-        package="ros2_launch_demo",
-        executable="listener",
-        name="listener",
-        output="screen",
-    )
+class MinimalPublisher : public rclcpp::Node
+{
+public:
+  MinimalPublisher()
+  : Node("talker"), count_(0)
+  {
+    this->declare_parameter<std::string>("message_prefix", "Hello");
 
-    return LaunchDescription([
-        talker_node,
-        listener_node,
-    ])
+    publisher_ = this->create_publisher<std_msgs::msg::String>("chatter", 10);
+
+    timer_ = this->create_wall_timer(
+      500ms, std::bind(&MinimalPublisher::timer_callback, this));
+  }
+
+private:
+  void timer_callback()
+  {
+    std::string prefix = this->get_parameter("message_prefix").as_string();
+
+    auto message = std_msgs::msg::String();
+    message.data = prefix + ": " + std::to_string(count_++);
+    
+    RCLCPP_INFO(this->get_logger(), "Publishing: '%s'", message.data.c_str());
+    publisher_->publish(message);
+  }
+
+  rclcpp::TimerBase::SharedPtr timer_;
+  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr publisher_;
+  size_t count_;
+};
+
+int main(int argc, char * argv[])
+{
+  rclcpp::init(argc, argv);
+  rclcpp::spin(std::make_shared<MinimalPublisher>());
+  rclcpp::shutdown();
+  return 0;
+}
